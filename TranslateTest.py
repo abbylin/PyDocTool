@@ -70,8 +70,9 @@ def buildUrl(text,tk):
   baseUrl+='q='+text
   return baseUrl
 
+js = Py4Js()
 def translate(text):
-  js = Py4Js()
+
   header={
     'authority':'translate.google.cn',
     'method':'GET',
