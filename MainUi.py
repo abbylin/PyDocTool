@@ -7,18 +7,9 @@
 # WARNING! All changes made in this file will be lost!
 
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-
-import docx
-import os
-from docx import Document
-from docx.oxml.ns import qn
-from docx.shared import Pt
-from googletrans import Translator
-
-
+from documentTools import Translater
 
 class App(QWidget):
 
@@ -53,7 +44,7 @@ class App(QWidget):
         self.label_3.setObjectName("label_3")
         self.startButton = QPushButton(self)
         self.startButton.setText("开始")
-        self.startButton.setGeometry(QtCore.QRect(self.width/2 - 40, self.height - 80, 80, 40));
+        self.startButton.setGeometry(QtCore.QRect(self.width/2 - 40, self.height - 80, 80, 40))
         self.startButton.setObjectName("startButton")
         self.startButton.clicked.connect(self.startTranslate)
 
@@ -106,7 +97,7 @@ class App(QWidget):
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.label_3.setText(_translate("Dialog", "TextLabel"))
+        self.label_3.setText(_translate("Dialog", " "))
         self.label.setText(_translate("Dialog", "源文件"))
         self.label_2.setText(_translate("Dialog", "保存为"))
         self.pushButton_2.setText(_translate("Dialog", "打开"))
@@ -130,53 +121,25 @@ class App(QWidget):
             self.targetFileName = fileName
             self.textBrowser_2.setText(self.targetFileName)
 
-    def updateProgress(self, currentValue, currentText, finish):
-        self.progressBar.setValue(currentValue)
+    def updateProgress(self, currentValue, currentText):
+        self.progressBar.setValue(currentValue*100)
         self.label_3.setText(currentText)
 
+    def finishHandling(self, finish):
+        if finish:
+            self.startButton.setEnabled(True)
+            self.label_3.setText("完成处理!")
+            self.progressBar.setValue(100)
+
     def startTranslate(self):
-        #documentTools.beginTranslate(self, self.sourceFileName, self.targetFileName)
+        self.label_3.setText("开始处理")
+        self.startButton.setEnabled(False)
         self.workThread = Translater()
         self.workThread.progressSignal.connect(self.updateProgress)
+        self.workThread.finishSignal.connect(self.finishHandling)
         self.workThread.sourceFileName = self.sourceFileName
         self.workThread.targetFileName = self.targetFileName
         self.workThread.start()
-
-
-class Translater(QThread):
-    progressSignal = pyqtSignal(float, str, bool) # 更新进度条值，提示文字，是否完成
-    sourceFileName = ''
-    targetFileName = ''
-
-    def _init_(self, src='', target=''):
-        super(Translater, self).__init__()
-
-    def run(self):
-        file = docx.Document(self.sourceFileName)
-        totalParagraphs = len(file.paragraphs)
-
-        finalDoc = Document()
-        finalDoc.styles['Normal'].font.name = 'Times New Roman'
-        finalDoc.styles['Normal'].font.size = Pt(14)
-        finalDoc.styles['Normal']._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
-
-        if os.path.exists(self.targetFileName):
-            os.remove(self.targetFileName)
-
-        translator = Translator()
-        for i in range(totalParagraphs):
-            result = translator.translate(file.paragraphs[i].text, dest="zh-CN")
-            result.text.replace("（", "(")
-            result.text.replace("）", ")")
-            finalDoc.add_paragraph(result.text)
-            print("正在处理第" + str(i) + "段")
-            if i == totalParagraphs - 1:
-                self.progressSignal.emit(i/totalParagraphs, "正在处理第" + str(i) + "段", True)
-            else:
-                self.progressSignal.emit(i/totalParagraphs, "正在处理第" + str(i) + "段", False)
-
-
-        finalDoc.save(self.targetFileName)
 
 
 if __name__ == '__main__':
