@@ -38,12 +38,13 @@ class Translater(QThread):
 
         translator = Translator()
         for i in range(totalParagraphs):
-            # text = "正在处理第"+str(i+1)+"段"+"(共计"+str(totalParagraphs)+"段)"
-            # self.progressSignal.emit((i+1)/totalParagraphs, text)
+            text = "正在处理第"+str(i+1)+"段"+"(共计"+str(totalParagraphs)+"段)"
+            self.progressSignal.emit((i+1)/totalParagraphs, text)
             result = translator.translate(file.paragraphs[i].text, dest="zh-CN")
-            result.text.replace("（", "(")
-            result.text.replace("）", ")")
-            finalDoc.add_paragraph(result.text)
+            resultString = result.text.replace(chr(65288), chr(40))
+            resultString = resultString.replace(chr(65289), chr(41))
+            resultString = resultString.replace(chr(59), chr(65307))
+            finalDoc.add_paragraph(resultString)
             print("正在处理第" + str(i) + "段")
 
         finalDoc.save(self.targetFileName)
